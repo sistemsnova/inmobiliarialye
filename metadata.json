@@ -1,0 +1,5 @@
+{
+  "name": "inmobiliaria",
+  "description": "Una plataforma integral de gestión inmobiliaria basada en la nube con conocimientos impulsados por IA, seguimiento de propiedades, CRM y análisis avanzado.",
+  "requestFramePermissions": ["camera"]
+}
