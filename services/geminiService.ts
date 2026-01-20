@@ -1,8 +1,10 @@
-
+﻿
 import { GoogleGenAI, Type } from "@google/genai";
 import { Property, PropertyType, UtilityType } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Cambiá la línea 4 por esta:
+const ai = new GoogleGenAI({ apiKey: 
+import.meta.env.VITE_GEMINI_API_KEY });
 
 export const generatePropertyDescription = async (property: Partial<Property>, tone: string = 'profesional'): Promise<string> => {
   try {

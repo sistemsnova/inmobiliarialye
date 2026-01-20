@@ -25,7 +25,6 @@ interface Props {
   config: CompanyConfig;
   onLogout: () => void;
   onUpdateBillStatus: (billId: string, newStatus: UtilityBill['status']) => void;
-  // Fix: Add owners to props interface
   owners: Owner[];
 }
 
@@ -34,6 +33,7 @@ const ClientPortal: React.FC<Props> = ({ client, isOwner, properties, bills, con
   const [selectedBillsForPayment, setSelectedBillsForPayment] = useState<UtilityBill[]>([]);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
+  const [whatsappSent, setWhatsappSent] = useState(false); // New state for WhatsApp feedback
   
   const relevantProperties = isOwner 
     ? properties.filter(p => p.ownerId === client.id)
@@ -53,7 +53,6 @@ const ClientPortal: React.FC<Props> = ({ client, isOwner, properties, bills, con
     if (bill.type === UtilityType.RENT) {
       const property = properties.find(p => p.id === bill.propertyId);
       if (property && property.ownerId) {
-        // Fix: 'owners' is now available from props
         const owner = owners.find(o => o.id === property.ownerId);
         return owner?.paymentAlias || 'ALIAS.PROPIETARIO.NO.CONFIG';
       }
@@ -91,24 +90,76 @@ const ClientPortal: React.FC<Props> = ({ client, isOwner, properties, bills, con
     setSelectedBillsForPayment([]);
     setPaymentConfirmed(false);
     setSelectAll(false);
+    setWhatsappSent(false); // Reset WhatsApp sent state
   };
 
   const sendWhatsAppProof = () => {
-    const paidBillsSummary = selectedBillsForPayment.map(bill => {
-      const propName = properties.find(p => p.id === bill.propertyId)?.title || 'tu propiedad';
-      return `- *${bill.type}* (${propName}): ${formatCurrency(bill.amount)}`;
-    }).join('\n');
+    console.log('Attempting to send WhatsApp proofs...');
+    setWhatsappSent(true); // Show feedback message
 
-    const message = `¡Hola! Soy ${client.name}.
+    const rentBillsByOwner: { [ownerId: string]: UtilityBill[] } = {};
+    const agencyBills: UtilityBill[] = [];
 
-He realizado el pago de los siguientes conceptos:
-${paidBillsSummary}
+    selectedBillsForPayment.forEach(bill => {
+        if (bill.type === UtilityType.RENT) {
+            const property = properties.find(p => p.id === bill.propertyId);
+            if (property?.ownerId) {
+                if (!rentBillsByOwner[property.ownerId]) {
+                    rentBillsByOwner[property.ownerId] = [];
+                }
+                rentBillsByOwner[property.ownerId].push(bill);
+            }
+        } else {
+            agencyBills.push(bill);
+        }
+    });
 
-*Monto Total Transferido:* ${formatCurrency(selectedBillsForPayment.reduce((acc, bill) => acc + bill.amount, 0))} ARS
+    // Send to each owner for rent bills
+    for (const ownerId in rentBillsByOwner) {
+        const owner = owners.find(o => o.id === ownerId);
+        if (owner?.phone) {
+            const billsToOwner = rentBillsByOwner[ownerId];
+            const summary = billsToOwner.map(bill => {
+                const propName = properties.find(p => p.id === bill.propertyId)?.title || 'tu propiedad';
+                return `- *${bill.type}* (${propName}): ${formatCurrency(bill.amount)}`;
+            }).join('\n');
+
+            const message = `¡Hola ${owner.name}! Soy ${client.name}.
+
+He realizado el pago de los siguientes alquileres:
+${summary}
+
+*Monto Total Transferido al Propietario:* ${formatCurrency(billsToOwner.reduce((acc, bill) => acc + bill.amount, 0))} ARS (Alias: ${owner.paymentAlias || 'N/A'})
 
 Por favor, revisa el comprobante que adjunto a continuación. ¡Muchas gracias!`;
 
-    window.open(`https://wa.me/${config.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+            window.open(`https://wa.me/${owner.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+        }
+    }
+
+    // Send to agency for other bills
+    if (agencyBills.length > 0) {
+        const summary = agencyBills.map(bill => {
+            const propName = properties.find(p => p.id === bill.propertyId)?.title || 'la propiedad';
+            return `- *${bill.type}* (${propName}): ${formatCurrency(bill.amount)}`;
+        }).join('\n');
+
+        const message = `¡Hola! Soy ${client.name}.
+
+He realizado el pago de los siguientes servicios a la inmobiliaria:
+${summary}
+
+*Monto Total Transferido a la Inmobiliaria:* ${formatCurrency(agencyBills.reduce((acc, bill) => acc + bill.amount, 0))} ARS (Alias: ${config.realEstateAlias || 'N/A'})
+
+Por favor, revisa el comprobante que adjunto a continuación. ¡Muchas gracias!`;
+
+        window.open(`https://wa.me/${config.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+    }
+
+    // Close modal after a short delay to allow WhatsApp windows to open
+    setTimeout(() => {
+      handleClosePaymentModal();
+    }, 5000); 
   };
 
   const handleOpenPaymentModal = () => {
@@ -258,6 +309,7 @@ Por favor, revisa el comprobante que adjunto a continuación. ¡Muchas gracias!`
                 <div className="p-4 bg-slate-900 text-white rounded-xl mb-6">
                   <p className="text-[10px] font-bold text-slate-400 uppercase">Alias de Transferencia</p>
                   <div className="flex items-center justify-between mt-1">
+                    {/* Display a single alias here for consistency in the modal. The actual send will group by recipient. */}
                     <p className="text-lg font-bold font-mono">{getAliasForBill(selectedBillsForPayment[0])}</p>
                     <button 
                       onClick={() => { navigator.clipboard.writeText(getAliasForBill(selectedBillsForPayment[0])); alert('Alias copiado!'); }}
@@ -281,12 +333,18 @@ Por favor, revisa el comprobante que adjunto a continuación. ¡Muchas gracias!`
               <div className="text-center p-4">
                 <CheckCircle2 size={64} className="text-emerald-500 mx-auto mb-4" />
                 <h3 className="text-2xl font-bold text-slate-800 mb-2">¡Pago Registrado!</h3>
-                <p className="text-slate-600 mb-6">Por favor, envía el comprobante de pago a la inmobiliaria vía WhatsApp para que podamos verificarlo.</p>
+                <p className="text-slate-600 mb-6">Por favor, envía el comprobante de pago a la inmobiliaria y/o propietarios correspondientes vía WhatsApp para que puedan verificarlo.</p>
+                {whatsappSent && (
+                  <div className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold animate-in fade-in zoom-in w-fit mx-auto mb-4">
+                    Abriendo chats de WhatsApp...
+                  </div>
+                )}
                 <button 
                   onClick={sendWhatsAppProof} 
                   className="w-full py-4 bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg mb-3 hover:bg-emerald-600 transition-colors"
+                  disabled={whatsappSent}
                 >
-                  <MessageCircle size={20} /> Enviar Comprobante por WhatsApp
+                  <MessageCircle size={20} /> Enviar Comprobantes por WhatsApp
                 </button>
                 <button onClick={handleClosePaymentModal} className="w-full py-3 text-slate-400 font-bold text-sm hover:text-slate-600 transition-colors">Cerrar</button>
               </div>

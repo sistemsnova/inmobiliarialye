@@ -1,4 +1,4 @@
-﻿
+
 export enum PropertyStatus {
   AVAILABLE = 'Disponible',
   RESERVED = 'Reservado',
