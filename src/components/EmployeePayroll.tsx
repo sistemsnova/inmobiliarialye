@@ -24,7 +24,7 @@ interface Props {
   onUpdateUser: (userId: string, data: Partial<User>) => void;
 }
 
-export const EmployeePayroll: React.FC<Props> = ({ user, onBack, onUpdatePayroll, onUpdateUser }) => {
+const EmployeePayroll: React.FC<Props> = ({ user, onBack, onUpdatePayroll, onUpdateUser }) => {
   const [showAddRecord, setShowAddRecord] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(user.name);
@@ -157,3 +157,5 @@ export const EmployeePayroll: React.FC<Props> = ({ user, onBack, onUpdatePayroll
     </div>
   );
 };
+
+export default EmployeePayroll;

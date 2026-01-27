@@ -13,7 +13,7 @@ interface Props {
   onLoginTenant: (tenant: Tenant) => void;
 }
 
-export const Login: React.FC<Props> = ({ users, owners, tenants, config, onLoginStaff, onLoginOwner, onLoginTenant }) => {
+const Login: React.FC<Props> = ({ users, owners, tenants, config, onLoginStaff, onLoginOwner, onLoginTenant }) => {
   const [mode, setMode] = useState<'SELECT' | 'STAFF' | 'OWNER' | 'TENANT'>('SELECT');
   const [inputValue, setInputValue] = useState('');
   const [error, setError] = useState('');
@@ -87,3 +87,5 @@ export const Login: React.FC<Props> = ({ users, owners, tenants, config, onLogin
     </div>
   );
 };
+
+export default Login;

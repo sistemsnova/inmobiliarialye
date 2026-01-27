@@ -33,7 +33,7 @@ interface Props {
   onUpdateOwner: (ownerId: string, updatedFields: Partial<Owner>) => void; // Added prop
 }
 
-export const OwnerProfile: React.FC<Props> = ({ owner, properties, bills, onBack, onUpdateBillStatus, onUpdateOwner }) => {
+const OwnerProfile: React.FC<Props> = ({ owner, properties, bills, onBack, onUpdateBillStatus, onUpdateOwner }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState<Partial<Owner>>(owner);
 
@@ -387,3 +387,5 @@ Gracias por tu gestión!`;
     </div>
   );
 };
+
+export default OwnerProfile;

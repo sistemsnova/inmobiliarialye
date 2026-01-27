@@ -33,7 +33,7 @@ interface Props {
   onSaveRates: (rates: UtilityRates) => void; 
 }
 
-export const UtilitiesManager: React.FC<Props> = ({ properties, onAddBill, bills, utilityRates, onSaveRates }) => {
+const UtilitiesManager: React.FC<Props> = ({ properties, onAddBill, bills, utilityRates, onSaveRates }) => {
   const [activeTab, setActiveTab] = useState<'rates' | 'generate' | 'upload' | 'bulk' | 'history'>('rates'); 
   const [loading, setLoading] = useState(false);
 
@@ -775,3 +775,5 @@ export const UtilitiesManager: React.FC<Props> = ({ properties, onAddBill, bills
     </div>
   );
 };
+
+export default UtilitiesManager;

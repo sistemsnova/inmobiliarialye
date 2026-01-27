@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tenant, Property, Owner, UtilityBill, UtilityType, CompanyConfig } from '../types';
 import { 
@@ -24,7 +23,7 @@ import {
   DollarSign,
   PlusCircle // New icon for "Registrar Nuevo Pago"
 } from 'lucide-react';
-import { ReceiptViewer } from './ReceiptViewer'; // Import new ReceiptViewer component
+import ReceiptViewer from './ReceiptViewer'; // Import new ReceiptViewer component
 
 interface Props {
   tenant: Tenant;
@@ -39,7 +38,7 @@ interface Props {
   onAddBill: (bill: UtilityBill) => void;
 }
 
-export const TenantProfile: React.FC<Props> = ({ tenant, properties, owners, bills, onBack, onUpdateTenant, config, onUpdateBillStatus, onAddBill }) => {
+const TenantProfile: React.FC<Props> = ({ tenant, properties, owners, bills, onBack, onUpdateTenant, config, onUpdateBillStatus, onAddBill }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState<Partial<Tenant>>(tenant);
   const [isSaved, setIsSaved] = useState(false); // State for save confirmation
@@ -608,4 +607,28 @@ export const TenantProfile: React.FC<Props> = ({ tenant, properties, owners, bil
 
       {/* Receipt Viewer Modal */}
       {showReceiptViewerModal && receiptDetails && (
-        <div className="fixed inset-0
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-3xl h-[90vh] overflow-hidden flex flex-col animate-in zoom-in duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+              <h3 className="text-xl font-bold">Recibo de Pago</h3>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 px-4 py-2 bg-[var(--primary-color-600)] text-white rounded-xl font-bold hover:bg-[var(--primary-color-700)] transition-colors shadow-md print:hidden"
+                >
+                  <Printer size={18} /> Imprimir
+                </button>
+                <button onClick={() => setShowReceiptViewerModal(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 print:hidden"><X size={20} /></button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <ReceiptViewer {...receiptDetails} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TenantProfile;

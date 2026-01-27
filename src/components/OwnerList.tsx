@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Owner, Property, UtilityBill } from '../types';
 import { Plus, Mail, Phone, Home, Search, MoreVertical, X, ExternalLink, CreditCard, Fingerprint } from 'lucide-react';
-import { OwnerProfile } from './OwnerProfile';
+import OwnerProfile from './OwnerProfile';
 
 interface Props {
   owners: Owner[];
@@ -13,7 +13,7 @@ interface Props {
   onUpdateOwner: (ownerId: string, updatedFields: Partial<Owner>) => void; // Added prop
 }
 
-export const OwnerList: React.FC<Props> = ({ owners, properties, bills, onAdd, onUpdateBillStatus, onUpdateOwner }) => {
+const OwnerList: React.FC<Props> = ({ owners, properties, bills, onAdd, onUpdateBillStatus, onUpdateOwner }) => {
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
@@ -175,3 +175,5 @@ export const OwnerList: React.FC<Props> = ({ owners, properties, bills, onAdd, o
     </div>
   );
 };
+
+export default OwnerList;

@@ -9,7 +9,7 @@ interface Props {
   owners: Owner[];
 }
 
-export const PropertyList: React.FC<Props> = ({ properties, owners }) => {
+const PropertyList: React.FC<Props> = ({ properties, owners }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filtered = properties.filter(p => 
@@ -132,3 +132,5 @@ export const PropertyList: React.FC<Props> = ({ properties, owners }) => {
     </div>
   );
 };
+
+export default PropertyList;

@@ -8,7 +8,6 @@ import {
   Settings, CheckSquare, MapPin, Camera 
 } from 'lucide-react';
 import { generatePropertyDescription } from '../services/geminiService';
-import { AMENITIES_LIST } from '../constants'; // Import AMENITIES_LIST
 
 interface Props {
   onSave: (property: Property) => void;
@@ -16,7 +15,13 @@ interface Props {
   tenants: Tenant[];
 }
 
-export const PropertyForm: React.FC<Props> = ({ onSave, owners, tenants }) => {
+const AMENITIES_LIST = [
+  'Piscina', 'SUM', 'Gimnasio', 'Parrilla', 'Seguridad 24hs', 
+  'Cochera', 'Balcón', 'Terraza', 'Jardín', 'Laundry', 
+  'Calefacción Central', 'Aire Acondicionado', 'Ascensor'
+];
+
+const PropertyForm: React.FC<Props> = ({ onSave, owners, tenants }) => {
   const navigate = useNavigate();
   const [loadingAI, setLoadingAI] = useState(false);
   const [tone, setTone] = useState('profesional y persuasivo');
@@ -332,3 +337,5 @@ export const PropertyForm: React.FC<Props> = ({ onSave, owners, tenants }) => {
     </div>
   );
 };
+
+export default PropertyForm;

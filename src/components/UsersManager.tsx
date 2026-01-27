@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { User, User as UserType, PayrollRecord } from '../types';
 import { Plus, Shield, Mail, Trash2, X, Wallet, ExternalLink, Calendar, CreditCard } from 'lucide-react';
-import { EmployeePayroll } from './EmployeePayroll';
+import EmployeePayroll from './EmployeePayroll';
 
 interface Props {
   users: UserType[];
@@ -12,7 +12,7 @@ interface Props {
   onUpdateUser: (userId: string, data: Partial<User>) => void;
 }
 
-export const UsersManager: React.FC<Props> = ({ users, onAdd, onDelete, onUpdatePayroll, onUpdateUser }) => {
+const UsersManager: React.FC<Props> = ({ users, onAdd, onDelete, onUpdatePayroll, onUpdateUser }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [newUser, setNewUser] = useState<Partial<UserType>>({ 
@@ -174,3 +174,5 @@ export const UsersManager: React.FC<Props> = ({ users, onAdd, onDelete, onUpdate
     </div>
   );
 };
+
+export default UsersManager;

@@ -8,7 +8,7 @@ interface Props {
   onAdd: (lead: Lead) => void;
 }
 
-export const LeadsManager: React.FC<Props> = ({ leads, onAdd }) => {
+const LeadsManager: React.FC<Props> = ({ leads, onAdd }) => {
   const [filter, setFilter] = useState<'ALL' | 'NEW' | 'CONTACTED'>('ALL');
 
   const filtered = leads.filter(l => filter === 'ALL' || l.status === filter);
@@ -96,3 +96,5 @@ export const LeadsManager: React.FC<Props> = ({ leads, onAdd }) => {
     </div>
   );
 };
+
+export default LeadsManager;

@@ -14,7 +14,7 @@ interface Props {
   leads: Lead[];
 }
 
-export const AIAssistant: React.FC<Props> = ({ properties, leads }) => {
+const AIAssistant: React.FC<Props> = ({ properties, leads }) => {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'ai', text: '¡Hola! Soy tu asistente de InmoAI. ¿En qué puedo ayudarte hoy? Puedo analizar tu inventario, redactar correos para leads o darte insights de mercado.' }
   ]);
@@ -183,3 +183,5 @@ const TrendingUp = ({ size, className }: { size: number, className?: string }) =
     <polyline points="17 6 23 6 23 12"></polyline>
   </svg>
 );
+
+export default AIAssistant;

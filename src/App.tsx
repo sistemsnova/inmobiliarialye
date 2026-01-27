@@ -18,20 +18,21 @@ import {
   Archive
 } from 'lucide-react';
 import { Property, Owner, Lead, PropertyStatus, PropertyType, UtilityBill, User, Task, PayrollRecord, CompanyConfig, Tenant, UtilityRates } from './types';
-import { Dashboard } from './components/Dashboard';
-import { PropertyList } from './components/PropertyList';
-import { OwnerList } from './components/OwnerList';
-import { LeadsManager } from './components/LeadsManager';
-import { PropertyForm } from './components/PropertyForm';
-import { AIAssistant } from './components/AIAssistant';
-import { UtilitiesManager } from './components/UtilitiesManager';
-import { UsersManager } from './components/UsersManager';
-import { TasksManager } from './components/TasksManager';
-import { SettingsManager } from './components/SettingsManager';
-import { Login } from './components/Login';
-import { ClientPortal } from './components/ClientPortal';
-import { TenantsManager } from './components/TenantsManager';
-import { BackupManager } from './components/BackupManager';
+import  Dashboard  from './components/Dashboard';
+import  PropertyList  from './components/PropertyList';
+import  OwnerList  from './components/OwnerList';
+import  LeadsManager  from './components/LeadsManager';
+import  PropertyForm  from './components/PropertyForm';
+import  AIAssistant  from './components/AIAssistant';
+import  UtilitiesManager  from './components/UtilitiesManager';
+import  UsersManager  from './components/UsersManager';
+import  TasksManager  from './components/TasksManager';
+import  SettingsManager  from './components/SettingsManager';
+import Login from './components/Login';
+import  ClientPortal  from './components/ClientPortal';
+import  TenantsManager  from './components/TenantsManager';
+import BackupManager from './components/BackupManager';
+import { FirebaseProvider } from './context/FirebaseContext';
 import { DEFAULT_CONFIG, INITIAL_USERS, NAV_ITEMS } from './constants';
 
 
@@ -308,3 +309,5 @@ export const Sidebar: React.FC<{ user: User; config: CompanyConfig; onLogout: ()
     </aside>
   );
 };
+
+export default App;

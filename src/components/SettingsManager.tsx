@@ -8,7 +8,7 @@ interface Props {
   onSave: (config: CompanyConfig) => void;
 }
 
-export const SettingsManager: React.FC<Props> = ({ config, onSave }) => {
+const SettingsManager: React.FC<Props> = ({ config, onSave }) => {
   const [formData, setFormData] = useState<CompanyConfig>(config);
   const [isSaved, setIsSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -170,3 +170,5 @@ export const SettingsManager: React.FC<Props> = ({ config, onSave }) => {
     </div>
   );
 };
+
+export default SettingsManager;

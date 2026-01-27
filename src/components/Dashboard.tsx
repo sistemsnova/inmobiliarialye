@@ -23,7 +23,7 @@ interface Props {
   tenants: Tenant[];
 }
 
-export const Dashboard: React.FC<Props> = ({ properties, owners, leads, tenants }) => {
+const Dashboard: React.FC<Props> = ({ properties, owners, leads, tenants }) => {
   const navigate = useNavigate();
   
   const stats = [
@@ -190,3 +190,5 @@ export const Dashboard: React.FC<Props> = ({ properties, owners, leads, tenants 
     </div>
   );
 };
+
+export default Dashboard;

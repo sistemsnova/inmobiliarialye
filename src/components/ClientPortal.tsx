@@ -28,7 +28,7 @@ interface Props {
   owners: Owner[];
 }
 
-export const ClientPortal: React.FC<Props> = ({ client, isOwner, properties, bills, config, onLogout, onUpdateBillStatus, owners }) => {
+const ClientPortal: React.FC<Props> = ({ client, isOwner, properties, bills, config, onLogout, onUpdateBillStatus, owners }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedBillsForPayment, setSelectedBillsForPayment] = useState<UtilityBill[]>([]);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
@@ -355,3 +355,5 @@ Por favor, revisa el comprobante que adjunto a continuación. ¡Muchas gracias!`
     </div>
   );
 };
+
+export default ClientPortal;

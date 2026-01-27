@@ -12,7 +12,7 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-export const TasksManager: React.FC<Props> = ({ tasks, users, currentUser, onAdd, onUpdateStatus, onDelete }) => {
+const TasksManager: React.FC<Props> = ({ tasks, users, currentUser, onAdd, onUpdateStatus, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [newTask, setNewTask] = useState<Partial<Task>>({
     title: '',
@@ -170,3 +170,5 @@ export const TasksManager: React.FC<Props> = ({ tasks, users, currentUser, onAdd
     </div>
   );
 };
+
+export default TasksManager;

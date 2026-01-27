@@ -1,9 +1,7 @@
-
-
 import React, { useState } from 'react';
 import { Tenant, Property, Owner, PropertyStatus, CompanyConfig, UtilityBill } from '../types';
 import { Plus, Search, Mail, Phone, Calendar, User, CreditCard, X, Key, Home, UserCircle, ExternalLink, AlertTriangle } from 'lucide-react';
-import { TenantProfile } from './TenantProfile';
+import TenantProfile from './TenantProfile';
 
 interface Props {
   tenants: Tenant[];
@@ -18,7 +16,7 @@ interface Props {
   onAddBill: (bill: UtilityBill) => void;
 }
 
-export const TenantsManager: React.FC<Props> = ({ tenants, properties, owners, onAdd, onDelete, onUpdateTenant, config, onUpdateBillStatus, onAddBill }) => {
+const TenantsManager: React.FC<Props> = ({ tenants, properties, owners, onAdd, onDelete, onUpdateTenant, config, onUpdateBillStatus, onAddBill }) => {
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPropId, setSelectedPropId] = useState('');
@@ -238,3 +236,5 @@ export const TenantsManager: React.FC<Props> = ({ tenants, properties, owners, o
     </div>
   );
 };
+
+export default TenantsManager;
