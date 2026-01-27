@@ -7,8 +7,6 @@ import {
   Users, 
   UserCircle, 
   Briefcase, 
-  Plus, 
-  Search, 
   Sparkles, 
   LogOut,
   Zap,
@@ -20,20 +18,22 @@ import {
   Archive
 } from 'lucide-react';
 import { Property, Owner, Lead, PropertyStatus, PropertyType, UtilityBill, User, Task, PayrollRecord, CompanyConfig, Tenant, UtilityRates } from './types';
-import Dashboard from './components/Dashboard';
-import PropertyList from './components/PropertyList';
-import OwnerList from './components/OwnerList';
-import LeadsManager from './components/LeadsManager';
-import PropertyForm from './components/PropertyForm';
-import AIAssistant from './components/AIAssistant';
-import UtilitiesManager from './components/UtilitiesManager';
-import UsersManager from './components/UsersManager';
-import TasksManager from './components/TasksManager';
-import SettingsManager from './components/SettingsManager';
-import Login from './components/Login';
-import ClientPortal from './components/ClientPortal';
-import TenantsManager from './components/TenantsManager';
-import BackupManager from './components/BackupManager';
+import { Dashboard } from './components/Dashboard';
+import { PropertyList } from './components/PropertyList';
+import { OwnerList } from './components/OwnerList';
+import { LeadsManager } from './components/LeadsManager';
+import { PropertyForm } from './components/PropertyForm';
+import { AIAssistant } from './components/AIAssistant';
+import { UtilitiesManager } from './components/UtilitiesManager';
+import { UsersManager } from './components/UsersManager';
+import { TasksManager } from './components/TasksManager';
+import { SettingsManager } from './components/SettingsManager';
+import { Login } from './components/Login';
+import { ClientPortal } from './components/ClientPortal';
+import { TenantsManager } from './components/TenantsManager';
+import { BackupManager } from './components/BackupManager';
+import { DEFAULT_CONFIG, INITIAL_USERS, NAV_ITEMS } from './constants';
+
 
 // Color utilities
 function hexToRgb(hex: string) {
@@ -63,34 +63,7 @@ function hexToRgba(hex: string, alpha: number) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-const DEFAULT_CONFIG: CompanyConfig = {
-  name: 'InmoAI Elite',
-  logoUrl: '',
-  address: 'Av. Libertador 4500, Buenos Aires',
-  email: 'contacto@inmoai.com',
-  phone: '+54 11 4444-5555',
-  website: 'www.inmoai.com',
-  currency: 'ARS',
-  realEstateAlias: 'INMO.AI.ELITE',
-  primaryColor: '#4f46e5'
-};
-
-const INITIAL_USERS: User[] = [
-  { 
-    id: 'u1', 
-    name: 'Admin Root', 
-    email: 'admin@inmoai.com', 
-    role: 'ADMIN', 
-    avatar: 'https://ui-avatars.com/api/?name=Admin+Root&background=4f46e5&color=fff',
-    baseSalary: 850000,
-    hireDate: '2023-01-15',
-    dni: '20-12345678-9',
-    bankDetails: 'CBU: 0000003100001234567890',
-    payrollHistory: []
-  }
-];
-
-const App: React.FC = () => {
+export const App: React.FC = () => {
   const [authType, setAuthType] = useState<'NONE' | 'STAFF' | 'OWNER' | 'TENANT'>(() => {
     const saved = localStorage.getItem('crm_auth_type');
     return (saved as any) || 'NONE';
@@ -294,7 +267,7 @@ const App: React.FC = () => {
   );
 };
 
-const NoAccess = () => (
+export const NoAccess = () => (
   <div className="h-full flex flex-col items-center justify-center text-center p-8">
     <div className="p-6 bg-red-50 text-red-500 rounded-3xl mb-4"><ShieldAlert size={64} /></div>
     <h2 className="text-2xl font-bold text-slate-800 mb-2">Acceso Denegado</h2>
@@ -302,23 +275,9 @@ const NoAccess = () => (
   </div>
 );
 
-const Sidebar: React.FC<{ user: User; config: CompanyConfig; onLogout: () => void }> = ({ user, config, onLogout }) => {
+export const Sidebar: React.FC<{ user: User; config: CompanyConfig; onLogout: () => void }> = ({ user, config, onLogout }) => {
   const location = useLocation();
   const isAdmin = user.role === 'ADMIN';
-
-  const navItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { name: 'Propiedades', icon: Home, path: '/properties' },
-    { name: 'Tareas', icon: CheckSquare, path: '/tasks' },
-    { name: 'Propietarios', icon: UserCircle, path: '/owners' },
-    { name: 'Inquilinos', icon: Key, path: '/tenants' },
-    { name: 'Servicios', icon: Zap, path: '/utilities', hidden: !isAdmin },
-    { name: 'Leads', icon: Users, path: '/leads' },
-    { name: 'Usuarios', icon: Users2, path: '/users', hidden: !isAdmin },
-    { name: 'Configuración', icon: SettingsIcon, path: '/settings', hidden: !isAdmin },
-    { name: 'AI Lab', icon: Sparkles, path: '/ai-lab' },
-    { name: 'Backup', icon: Archive, path: '/backup', hidden: !isAdmin },
-  ];
 
   return (
     <aside className="hidden lg:flex flex-col w-64 bg-slate-900 text-slate-400 shrink-0">
@@ -330,8 +289,8 @@ const Sidebar: React.FC<{ user: User; config: CompanyConfig; onLogout: () => voi
           <span className="font-bold text-lg tracking-tight truncate">{config.name}</span>
         </div>
         <nav className="space-y-1">
-          {navItems.map((item) => {
-            if (item.hidden) return null;
+          {NAV_ITEMS.map((item) => {
+            if (item.hidden && !isAdmin) return null; // Simplified logic, as hidden items are only for admin
             const isActive = location.pathname === item.path;
             return (
               <Link key={item.path} to={item.path} className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive ? 'bg-[var(--primary-color-600)] text-white shadow-lg shadow-[var(--primary-color-shadow)]' : 'hover:bg-slate-800 hover:text-slate-200'}`}>
@@ -349,5 +308,3 @@ const Sidebar: React.FC<{ user: User; config: CompanyConfig; onLogout: () => voi
     </aside>
   );
 };
-
-export default App;
