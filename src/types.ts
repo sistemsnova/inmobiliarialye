@@ -1,80 +1,72 @@
-
+﻿// --- ENUMS (Categorías) ---
 export enum PropertyStatus {
-  AVAILABLE = 'Disponible',
-  RESERVED = 'Reservado',
-  SOLD = 'Vendido',
-  RENTED = 'Alquilado'
+  AVAILABLE = 'AVAILABLE',
+  RENTED = 'RENTED',
+  MAINTENANCE = 'MAINTENANCE',
+  SOLD = 'SOLD'
 }
 
 export enum PropertyType {
-  HOUSE = 'Casa',
-  APARTMENT = 'Apartamento',
-  LAND = 'Terreno',
-  COMMERCIAL = 'Local Comercial',
-  OFFICE = 'Oficina',
-  PENTHOUSE = 'Penthouse',
-  DUPLEX = 'Duplex'
+  HOUSE = 'HOUSE',
+  APARTMENT = 'APARTMENT',
+  COMMERCIAL = 'COMMERCIAL',
+  LAND = 'LAND'
 }
 
 export enum UtilityType {
-  ELECTRICITY = 'Luz',
-  GAS = 'Gas',
-  WATER = 'Agua',
-  TAXES = 'Impuestos',
-  RENT = 'Alquiler',
-  MANAGEMENT_FEE = 'Honorarios',
-  TENANT_PAYMENT_CREDIT = 'Pago a Cuenta/Adelanto' // New type for tenant payments/advances
+  ELECTRICITY = 'ELECTRICITY',
+  GAS = 'GAS',
+  WATER = 'WATER',
+  TAX = 'TAX'
+}
+
+// --- ROLES DE PERSONAL ---
+export type UserRole = 'ADMIN' | 'STAFF' | 'AGENT' | 'MANAGER' | 'RECEPTION' | 'OWNER' | 'TENANT';
+
+// --- INTERFACES ---
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: UserRole; // Ahora usa el tipo UserRole extendido
+  avatar?: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: any;
+  payrollHistory?: PayrollRecord[];
+}
+
+export interface PayrollRecord {
+  id: string;
+  date: string;
+  amount: number;
+  concept: string;
 }
 
 export interface Property {
   id: string;
-  title: string;
-  description: string;
+  address: string;
   price: number;
-  expenses?: number; // Expensas en ARS
   type: PropertyType;
   status: PropertyStatus;
-  address: string;
-  neighborhood?: string;
-  city?: string;
   ownerId: string;
   tenantId?: string;
-  bedrooms: number;
-  bathrooms: number;
-  area: number; // m2 totales
-  coveredArea?: number; // m2 cubiertos
-  yearBuilt?: number;
-  orientation?: 'Norte' | 'Sur' | 'Este' | 'Oeste' | 'NE' | 'NO' | 'SE' | 'SO';
-  condition?: 'A Estrenar' | 'Excelente' | 'Muy Bueno' | 'Bueno' | 'A Refaccionar';
-  amenities: string[];
-  images: string[]; // Múltiples fotos
-  createdAt: string;
-  // Suministros
-  electricityContract?: string;
-  gasContract?: string;
-  waterContract?: string;
-  taxContract?: string;
+  description?: string;
+  images?: string[];
 }
 
 export interface Owner {
   id: string;
-  dni: string;
   name: string;
+  cuit: string;
   email: string;
   phone: string;
-  notes?: string;
-  paymentAlias?: string;
+  whatsapp?: string;
+  balance: number;
 }
 
-export interface Tenant {
-  id: string;
-  dni: string;
-  name: string;
-  email: string;
-  phone: string;
-  contractStart: string;
-  contractEnd: string;
-  rentAmount: number;
+export interface Tenant extends Owner {
+  propertyId?: string;
 }
 
 export interface Lead {
@@ -82,79 +74,48 @@ export interface Lead {
   name: string;
   email: string;
   phone: string;
-  propertyId?: string;
-  interest: 'BUY' | 'RENT' | 'SELL';
-  status: 'NEW' | 'CONTACTED' | 'NEGOTIATION' | 'CLOSED';
+  status: 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'LOST' | 'WON';
+  interest?: string;
 }
 
-// Added PayrollRecord interface to fix "Module './types' has no exported member 'PayrollRecord'" errors
-export interface PayrollRecord {
+export interface UtilityBill {
   id: string;
+  propertyId: string;
+  tenantId: string;
+  type: UtilityType;
   amount: number;
-  type: 'SALARY' | 'BONUS' | 'ADVANCE';
-  description: string;
-  date: string;
-}
-
-export interface User {
-  id: string;
-  name: string;
-  role: 'ADMIN' | 'AGENT';
-  email: string;
-  avatar?: string;
-  baseSalary: number;
-  hireDate: string;
-  dni?: string;
-  // Added bankDetails field to fix errors in App.tsx and UsersManager.tsx
-  bankDetails?: string;
-  // Updated payrollHistory to use PayrollRecord type
-  payrollHistory: PayrollRecord[];
+  dueDate: string;
+  status: 'PENDING' | 'PAID' | 'OVERDUE';
 }
 
 export interface Task {
   id: string;
   title: string;
   description: string;
-  dueDate: string;
+  date: any; // Firebase Timestamp
+  status: 'TODO' | 'DONE';
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
-  assignedTo: string;
-  createdBy: string;
-}
-
-// Added UtilityBill interface to fix "Module './types' has no exported member 'UtilityBill'" errors
-export interface UtilityBill {
-  id: string;
-  propertyId: string;
-  type: UtilityType;
-  amount: number;
-  usage?: number; // Optional usage for consumption-based bills (e.g., kWh, m³)
-  date: string; // Due date (or payment date for TENANT_PAYMENT_CREDIT)
-  contractNumber: string;
-  status: 'PENDING' | 'PAID';
-  // New fields for receipt generation
-  receiptId?: string;
-  paymentMethod?: string;
-  paymentDate?: string; // Date when the payment was actually received/registered
-  description?: string; // New field for custom description for payments/advances
-}
-
-// Updated UtilityRates interface
-export interface UtilityRates {
-  electricityPricePerUnit: number; // Price per kWh
-  gasPricePerUnit: number;         // Price per m³
-  waterPricePerUnit: number;       // Price per m³
-  municipalityFixedAmount: number; // Fixed monthly amount for municipality/taxes
 }
 
 export interface CompanyConfig {
   name: string;
-  logoUrl: string;
-  address: string;
-  email: string;
-  phone: string;
-  website: string;
-  currency: string;
-  realEstateAlias: string;
-  primaryColor: string; // New field for theme customization
+  primaryColor: string;
+  logoUrl: string | null;
+  showLogoInSidebar: boolean;
+}
+
+export interface UtilityRates {
+  electricityPricePerUnit: number;
+  gasPricePerUnit: number;
+  waterPricePerUnit: number;
+  municipalityFixedAmount: number;
+}
+
+export interface Transaction {
+  id: string;
+  date: any; // Firebase Timestamp
+  amount: number;
+  description: string;
+  type: 'INCOME' | 'EXPENSE';
+  category: 'ALQUILER' | 'COMISION' | 'REPARACION' | 'IMPUESTO' | 'OTROS';
 }

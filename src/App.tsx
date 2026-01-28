@@ -1,164 +1,88 @@
-
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
-  Home, 
-  Users, 
-  UserCircle, 
-  Briefcase, 
-  Sparkles, 
-  LogOut,
-  Zap,
-  CheckSquare,
-  Users2,
-  ShieldAlert,
-  Settings as SettingsIcon,
-  Key,
-  Archive
+  LayoutDashboard, Home, Users, UserCircle, Briefcase, Sparkles, 
+  LogOut, Zap, ShieldAlert, Settings as SettingsIcon, Archive, DollarSign,
+  Calendar, CheckSquare, Users2
 } from 'lucide-react';
-import { Property, Owner, Lead, PropertyStatus, PropertyType, UtilityBill, User, Task, PayrollRecord, CompanyConfig, Tenant, UtilityRates } from './types';
-import  Dashboard  from './components/Dashboard';
-import  PropertyList  from './components/PropertyList';
-import  OwnerList  from './components/OwnerList';
-import  LeadsManager  from './components/LeadsManager';
-import  PropertyForm  from './components/PropertyForm';
-import  AIAssistant  from './components/AIAssistant';
-import  UtilitiesManager  from './components/UtilitiesManager';
-import  UsersManager  from './components/UsersManager';
-import  TasksManager  from './components/TasksManager';
-import  SettingsManager  from './components/SettingsManager';
+
+// Conexión Cloud a Firebase
+import { db } from './lib/firebase';
+import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
+
+// Definición de Tipos
+import { Property, Owner, Lead, User, Task, CompanyConfig, Tenant, UtilityBill, Transaction } from './types';
+
+// Componentes del Sistema
+import Dashboard from './components/Dashboard';
+import PropertyList from './components/PropertyList';
+import OwnerList from './components/OwnerList';
+import LeadsManager from './components/LeadsManager';
+import PropertyForm from './components/PropertyForm';
+import AIAssistant from './components/AIAssistant';
+import UtilitiesManager from './components/UtilitiesManager';
+import UsersManager from './components/UsersManager';
+import { TasksManager } from './components/TasksManager';
+import SettingsManager from './components/SettingsManager';
 import Login from './components/Login';
-import  ClientPortal  from './components/ClientPortal';
-import  TenantsManager  from './components/TenantsManager';
+import ClientPortal from './components/ClientPortal';
+import TenantsManager from './components/TenantsManager';
+import { DollarSign } from 'lucide-react';
 import BackupManager from './components/BackupManager';
-import { FirebaseProvider } from './context/FirebaseContext';
+
+// Módulos Nuevos
+import { ServicesCost } from './modules/ServicesCost';
+import { Finance } from './modules/Finance'; // <--- NUEVO MÓDULO
 import { DEFAULT_CONFIG, INITIAL_USERS, NAV_ITEMS } from './constants';
 
-
-// Color utilities
-function hexToRgb(hex: string) {
-  const bigint = parseInt(hex.slice(1), 16);
-  const r = (bigint >> 16) & 255;
-  const g = (bigint >> 8) & 255;
-  const b = bigint & 255;
-  return { r, g, b };
-}
-function rgbToHex(r: number, g: number, b: number) {
-  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).padStart(6, '0');
-}
-function adjustColor(hex: string, percent: number) {
-  let { r, g, b } = hexToRgb(hex);
-  r = Math.round(r * (100 + percent) / 100);
-  g = Math.round(g * (100 + percent) / 100);
-  b = Math.round(b * (100 + percent) / 100);
-  r = Math.min(255, Math.max(0, r));
-  g = Math.min(255, Math.max(0, g));
-  b = Math.min(255, Math.max(0, b));
-  return rgbToHex(r, g, b);
-}
-const lightenColor = (hex: string, percent: number) => adjustColor(hex, percent);
-const darkenColor = (hex: string, percent: number) => adjustColor(hex, -percent);
-function hexToRgba(hex: string, alpha: number) {
-  let { r, g, b } = hexToRgb(hex);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
 export const App: React.FC = () => {
-  const [authType, setAuthType] = useState<'NONE' | 'STAFF' | 'OWNER' | 'TENANT'>(() => {
-    const saved = localStorage.getItem('crm_auth_type');
-    return (saved as any) || 'NONE';
-  });
+  // --- ESTADOS DE AUTENTICACIÓN ---
+  const [authType, setAuthType] = useState<'NONE' | 'STAFF' | 'OWNER' | 'TENANT'>('NONE');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentClient, setCurrentClient] = useState<Owner | Tenant | null>(null);
 
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('crm_current_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  // --- ESTADOS DE DATOS (Sincronizados en tiempo real con Firebase) ---
+  const [companyConfig, setCompanyConfig] = useState<CompanyConfig>(DEFAULT_CONFIG);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [owners, setOwners] = useState<Owner[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [bills, setBills] = useState<UtilityBill[]>([]);
+  const [financeTransactions, setFinanceTransactions] = useState<Transaction[]>([]);
 
-  const [currentClient, setCurrentClient] = useState<Owner | Tenant | null>(() => {
-    const saved = localStorage.getItem('crm_current_client');
-    return saved ? JSON.parse(saved) : null;
-  });
+  // --- ESCUCHADORES CLOUD (Sincronización Total entre Computadoras) ---
+  useEffect(() => {
+    // 1. Configuración de Empresa
+    const unsubConfig = onSnapshot(doc(db, 'config', 'company'), (snap) => {
+      if (snap.exists()) setCompanyConfig(snap.data() as CompanyConfig);
+    });
 
-  // Data States
-  const [companyConfig, setCompanyConfig] = useState<CompanyConfig>(() => {
-    const saved = localStorage.getItem('crm_company_config');
-    return saved ? JSON.parse(saved) : DEFAULT_CONFIG;
-  });
+    // 2. Colecciones principales
+    const unsubProps = onSnapshot(collection(db, 'properties'), (snap) => {
+      setProperties(snap.docs.map(d => ({ id: d.id, ...d.data() })) as Property[]);
+    });
+    const unsubOwners = onSnapshot(collection(db, 'owners'), (snap) => {
+      setOwners(snap.docs.map(d => ({ id: d.id, ...d.data() })) as Owner[]);
+    });
+    const unsubTenants = onSnapshot(collection(db, 'tenants'), (snap) => {
+      setTenants(snap.docs.map(d => ({ id: d.id, ...d.data() })) as Tenant[]);
+    });
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
+      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })) as User[]);
+    });
+    const unsubLeads = onSnapshot(collection(db, 'leads'), (snap) => {
+      setLeads(snap.docs.map(d => ({ id: d.id, ...d.data() })) as Lead[]);
+    });
+    const unsubFinance = onSnapshot(collection(db, 'finance'), (snap) => {
+      setFinanceTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() })) as Transaction[]);
+    });
 
-  const [properties, setProperties] = useState<Property[]>(() => {
-    const saved = localStorage.getItem('crm_properties');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [owners, setOwners] = useState<Owner[]>(() => {
-    const saved = localStorage.getItem('crm_owners');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [tenants, setTenants] = useState<Tenant[]>(() => {
-    const saved = localStorage.getItem('crm_tenants');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [leads, setLeads] = useState<Lead[]>(() => {
-    const saved = localStorage.getItem('crm_leads');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [bills, setBills] = useState<UtilityBill[]>(() => {
-    const saved = localStorage.getItem('crm_bills');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem('crm_tasks');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('crm_users');
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
-  });
-
-  const [utilityRates, setUtilityRates] = useState<UtilityRates>(() => {
-    const saved = localStorage.getItem('crm_utility_rates');
-    return saved ? JSON.parse(saved) : {
-      electricityPricePerUnit: 150,
-      gasPricePerUnit: 80,
-      waterPricePerUnit: 120,
-      municipalityFixedAmount: 15000,
+    return () => {
+      unsubConfig(); unsubProps(); unsubOwners(); unsubTenants(); unsubUsers(); unsubLeads(); unsubFinance();
     };
-  });
-
-  // Persistence Effects
-  useEffect(() => {
-    localStorage.setItem('crm_auth_type', authType);
-    localStorage.setItem('crm_current_user', JSON.stringify(currentUser));
-    localStorage.setItem('crm_current_client', JSON.stringify(currentClient));
-    localStorage.setItem('crm_company_config', JSON.stringify(companyConfig));
-    localStorage.setItem('crm_properties', JSON.stringify(properties));
-    localStorage.setItem('crm_owners', JSON.stringify(owners));
-    localStorage.setItem('crm_tenants', JSON.stringify(tenants));
-    localStorage.setItem('crm_leads', JSON.stringify(leads));
-    localStorage.setItem('crm_bills', JSON.stringify(bills));
-    localStorage.setItem('crm_tasks', JSON.stringify(tasks));
-    localStorage.setItem('crm_users', JSON.stringify(users));
-    localStorage.setItem('crm_utility_rates', JSON.stringify(utilityRates));
-  }, [authType, currentUser, currentClient, companyConfig, properties, owners, tenants, leads, bills, tasks, users, utilityRates]);
-
-  useEffect(() => {
-    if (companyConfig.primaryColor) {
-      const baseColor = companyConfig.primaryColor;
-      document.documentElement.style.setProperty('--primary-color-50', lightenColor(baseColor, 50));
-      document.documentElement.style.setProperty('--primary-color-100', lightenColor(baseColor, 30));
-      document.documentElement.style.setProperty('--primary-color-600', baseColor);
-      document.documentElement.style.setProperty('--primary-color-700', darkenColor(baseColor, 10));
-      document.documentElement.style.setProperty('--primary-color-gradient-from', baseColor);
-      document.documentElement.style.setProperty('--primary-color-gradient-to', darkenColor(baseColor, 20));
-      document.documentElement.style.setProperty('--primary-color-shadow', hexToRgba(baseColor, 0.2));
-    }
-  }, [companyConfig.primaryColor]);
+  }, []);
 
   const handleLogout = () => {
     setAuthType('NONE');
@@ -166,42 +90,11 @@ export const App: React.FC = () => {
     setCurrentClient(null);
   };
 
-  // --- CRUD Functions ---
-  const addProperty = (p: Property) => setProperties([...properties, p]);
-  const addOwner = (o: Owner) => setOwners([...owners, o]);
-  const updateOwner = (id: string, fields: Partial<Owner>) => 
-    setOwners(owners.map(o => o.id === id ? { ...o, ...fields } : o));
-  
-  const addTenant = (t: Tenant, propertyId?: string) => {
-    setTenants([...tenants, t]);
-    if (propertyId) {
-      setProperties(properties.map(p => p.id === propertyId ? { ...p, tenantId: t.id, status: PropertyStatus.RENTED } : p));
-    }
-  };
-  const updateTenant = (id: string, fields: Partial<Tenant>) =>
-    setTenants(tenants.map(t => t.id === id ? { ...t, ...fields } : t));
-  const deleteTenant = (id: string) => {
-    setProperties(properties.map(p => p.tenantId === id ? { ...p, tenantId: undefined, status: PropertyStatus.AVAILABLE } : p));
-    setTenants(tenants.filter(t => t.id !== id));
+  const saveConfig = async (newConfig: CompanyConfig) => {
+    await setDoc(doc(db, 'config', 'company'), newConfig);
   };
 
-  const addLead = (l: Lead) => setLeads([...leads, l]);
-  const addBill = (b: UtilityBill) => setBills([...bills, b]);
-  const updateBillStatus = (id: string, status: UtilityBill['status'], data?: any) =>
-    setBills(bills.map(b => b.id === id ? { ...b, status, ...data } : b));
-
-  const addUser = (u: User) => setUsers([...users, u]);
-  const deleteUser = (id: string) => setUsers(users.filter(u => u.id !== id));
-  const updatePayroll = (userId: string, record: PayrollRecord) =>
-    setUsers(users.map(u => u.id === userId ? { ...u, payrollHistory: [...u.payrollHistory, record] } : u));
-  const updateUser = (userId: string, data: Partial<User>) =>
-    setUsers(users.map(u => u.id === userId ? { ...u, ...data } : u));
-
-  const addTask = (t: Task) => setTasks([...tasks, t]);
-  const updateTask = (id: string, status: Task['status']) =>
-    setTasks(tasks.map(t => t.id === id ? { ...t, status } : t));
-  const deleteTask = (id: string) => setTasks(tasks.filter(t => t.id !== id));
-
+  // --- CONTROL DE ACCESO ---
   if (authType === 'NONE') {
     return (
       <Login 
@@ -213,54 +106,70 @@ export const App: React.FC = () => {
     );
   }
 
+  // --- PORTAL CLIENTES ---
   if ((authType === 'OWNER' || authType === 'TENANT') && currentClient) {
     return (
       <ClientPortal 
         client={currentClient} isOwner={authType === 'OWNER'} 
         properties={properties} bills={bills} config={companyConfig}
-        onLogout={handleLogout} onUpdateBillStatus={updateBillStatus} owners={owners}
+        onLogout={handleLogout} onUpdateBillStatus={() => {}} owners={owners}
       />
     );
   }
 
-  const isAdmin = currentUser?.role === 'ADMIN';
+  const isAdmin = currentUser?.role?.toUpperCase() === 'ADMIN';
 
   return (
     <Router>
       <div className="flex min-h-screen bg-slate-50">
         <Sidebar user={currentUser!} config={companyConfig} onLogout={handleLogout} />
+        
         <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-          <header className="h-16 bg-white border-b flex items-center justify-between px-6 shrink-0">
+          {/* Header Sincronizado */}
+          <header className="h-16 bg-white border-b flex items-center justify-between px-8 shrink-0 shadow-sm z-10">
              <div className="flex items-center gap-4">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-[var(--primary-color-gradient-from)] to-[var(--primary-color-gradient-to)] bg-clip-text text-transparent">
-                    {companyConfig.name}
+                <h1 className="text-xl font-black text-slate-900 tracking-tighter italic uppercase">
+                  {companyConfig.name}
                 </h1>
+                <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-full border border-green-100">
+                   <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                   <span className="text-[9px] font-black uppercase tracking-widest">Sincronización Cloud Activa</span>
+                </div>
              </div>
+             
              <div className="flex items-center gap-4">
                 <div className="text-right hidden sm:block">
-                    <p className="text-sm font-semibold">{currentUser?.name}</p>
-                    <p className="text-xs text-slate-500">{currentUser?.role}</p>
+                    <p className="text-sm font-bold text-slate-800">{currentUser?.name}</p>
+                    <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest">{currentUser?.role}</p>
                 </div>
-                <img src={currentUser?.avatar} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-white shadow-sm" />
+                <div className="w-10 h-10 rounded-2xl bg-slate-100 border-2 border-white shadow-sm flex items-center justify-center overflow-hidden">
+                   <img src={currentUser?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.name}`} alt="Avatar" />
+                </div>
              </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-4 md:p-8">
-            <Routes>
-              <Route path="/" element={<Dashboard properties={properties} owners={owners} leads={leads} tenants={tenants} />} />
-              <Route path="/properties" element={<PropertyList properties={properties} owners={owners} />} />
-              <Route path="/properties/new" element={<PropertyForm onSave={addProperty} owners={owners} tenants={tenants} />} />
-              <Route path="/owners" element={<OwnerList owners={owners} properties={properties} bills={bills} onAdd={addOwner} onUpdateBillStatus={updateBillStatus} onUpdateOwner={updateOwner} />} />
-              <Route path="/tenants" element={<TenantsManager tenants={tenants} properties={properties} owners={owners} onAdd={addTenant} onDelete={deleteTenant} onUpdateTenant={updateTenant} config={companyConfig} onUpdateBillStatus={updateBillStatus} onAddBill={addBill} />} />
-              <Route path="/leads" element={<LeadsManager leads={leads} onAdd={addLead} />} />
-              <Route path="/tasks" element={<TasksManager tasks={tasks} users={users} currentUser={currentUser!} onAdd={addTask} onUpdateStatus={updateTask} onDelete={deleteTask} />} />
-              <Route path="/utilities" element={isAdmin ? <UtilitiesManager properties={properties} bills={bills} onAddBill={addBill} utilityRates={utilityRates} onSaveRates={setUtilityRates} /> : <NoAccess />} />
-              <Route path="/users" element={isAdmin ? <UsersManager users={users} onAdd={addUser} onDelete={deleteUser} onUpdatePayroll={updatePayroll} onUpdateUser={updateUser} /> : <NoAccess />} />
-              <Route path="/settings" element={isAdmin ? <SettingsManager config={companyConfig} onSave={setCompanyConfig} /> : <NoAccess />} />
-              <Route path="/ai-lab" element={<AIAssistant properties={properties} leads={leads} />} />
-              <Route path="/backup" element={isAdmin ? <BackupManager properties={properties} setProperties={setProperties} owners={owners} setOwners={setOwners} tenants={tenants} setTenants={setTenants} leads={leads} setLeads={setLeads} users={users} setUsers={setUsers} tasks={tasks} setTasks={setTasks} bills={bills} setBills={setBills} companyConfig={companyConfig} setCompanyConfig={setCompanyConfig} utilityRates={utilityRates} setUtilityRates={setUtilityRates} currentUser={currentUser!} /> : <NoAccess />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+          {/* Rutas y Módulos */}
+          <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/50">
+            <div className="max-w-7xl mx-auto h-full">
+              <Routes>
+                <Route path="/" element={<Dashboard properties={properties} owners={owners} leads={leads} tenants={tenants} />} />
+                <Route path="/properties" element={<PropertyList properties={properties} owners={owners} />} />
+                <Route path="/owners" element={<OwnerList owners={owners} properties={properties} bills={bills} onAdd={()=>{}} onUpdateBillStatus={()=>{}} onUpdateOwner={()=>{}} />} />
+                <Route path="/tenants" element={<TenantsManager tenants={tenants} properties={properties} owners={owners} onAdd={()=>{}} onDelete={()=>{}} onUpdateTenant={()=>{}} config={companyConfig} onUpdateBillStatus={()=>{}} onAddBill={()=>{}} />} />
+                
+                {/* --- MÓDULOS ADMINISTRATIVOS --- */}
+                <Route path="/services-cost" element={<ServicesCost />} /> 
+                <Route path="/finance" element={<Finance />} /> {/* ✅ RUTA FINANCIERA ACTIVA */}
+                <Route path="/leads" element={<LeadsManager leads={leads} onAdd={()=>{}} />} />
+                <Route path="/tasks" element={<TasksManager />} />
+                <Route path="/users" element={isAdmin ? <UsersManager /> : <Navigate to="/" />} />
+                <Route path="/ai-lab" element={<AIAssistant properties={properties} leads={leads} />} />
+                <Route path="/settings" element={isAdmin ? <SettingsManager config={companyConfig} onSave={saveConfig} /> : <Navigate to="/" />} />
+                <Route path="/backup" element={isAdmin ? <BackupManager properties={properties} setProperties={setProperties} owners={owners} setOwners={setOwners} tenants={tenants} setTenants={setTenants} leads={leads} setLeads={setLeads} users={users} setUsers={setUsers} tasks={tasks} setTasks={setTasks} bills={bills} setBills={setBills} companyConfig={companyConfig} setCompanyConfig={setCompanyConfig} utilityRates={{} as any} setUtilityRates={()=>{}} currentUser={currentUser!} /> : <Navigate to="/" />} />
+                
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </div>
           </div>
         </main>
       </div>
@@ -268,43 +177,36 @@ export const App: React.FC = () => {
   );
 };
 
-export const NoAccess = () => (
-  <div className="h-full flex flex-col items-center justify-center text-center p-8">
-    <div className="p-6 bg-red-50 text-red-500 rounded-3xl mb-4"><ShieldAlert size={64} /></div>
-    <h2 className="text-2xl font-bold text-slate-800 mb-2">Acceso Denegado</h2>
-    <p className="text-slate-500">No tienes permisos para acceder a esta sección.</p>
-  </div>
-);
-
-export const Sidebar: React.FC<{ user: User; config: CompanyConfig; onLogout: () => void }> = ({ user, config, onLogout }) => {
+// --- COMPONENTE SIDEBAR ---
+const Sidebar: React.FC<{ user: User; config: CompanyConfig; onLogout: () => void }> = ({ user, config, onLogout }) => {
   const location = useLocation();
-  const isAdmin = user.role === 'ADMIN';
+  const isAdmin = user?.role?.toUpperCase() === 'ADMIN';
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 bg-slate-900 text-slate-400 shrink-0">
-      <div className="p-6">
-        <div className="flex items-center gap-3 text-white mb-8">
-          <div className="w-10 h-10 bg-[var(--primary-color-600)] rounded-lg flex items-center justify-center overflow-hidden shrink-0 shadow-lg shadow-[var(--primary-color-shadow)]">
-            {config.logoUrl ? <img src={config.logoUrl} alt="Logo" className="w-full h-full object-contain p-1" /> : <Briefcase size={20} />}
+    <aside className="hidden lg:flex flex-col w-64 bg-slate-900 text-slate-400 shrink-0 border-r border-white/5 shadow-2xl">
+      <div className="p-8">
+        <div className="flex items-center gap-3 text-white mb-10">
+          <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center shadow-lg rotate-3">
+             <Briefcase size={20} />
           </div>
-          <span className="font-bold text-lg tracking-tight truncate">{config.name}</span>
+          <span className="font-black text-lg tracking-tighter italic">SISTEMS NOVA</span>
         </div>
+        
         <nav className="space-y-1">
           {NAV_ITEMS.map((item) => {
-            if (item.hidden && !isAdmin) return null; // Simplified logic, as hidden items are only for admin
+            if (item.hidden && !isAdmin) return null;
             const isActive = location.pathname === item.path;
             return (
-              <Link key={item.path} to={item.path} className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive ? 'bg-[var(--primary-color-600)] text-white shadow-lg shadow-[var(--primary-color-shadow)]' : 'hover:bg-slate-800 hover:text-slate-200'}`}>
-                <item.icon size={20} /><span className="font-medium">{item.name}</span>
+              <Link key={item.path} to={item.path} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/20' : 'hover:bg-slate-800'}`}>
+                <item.icon size={18} />
+                <span className="text-[11px] font-black uppercase tracking-widest">{item.name}</span>
               </Link>
             );
           })}
         </nav>
       </div>
-      <div className="mt-auto p-6 border-t border-slate-800">
-        <button onClick={onLogout} className="flex items-center gap-3 px-4 py-3 w-full rounded-lg hover:bg-slate-800 hover:text-red-400 transition-colors">
-          <LogOut size={20} /><span className="font-medium">Cerrar Sesión</span>
-        </button>
+      <div className="mt-auto p-6 border-t border-white/5 bg-black/20">
+        <button onClick={onLogout} className="flex items-center gap-3 px-4 py-3 w-full text-red-400 hover:bg-red-500/10 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest"><LogOut size={18} /> Salir</button>
       </div>
     </aside>
   );
